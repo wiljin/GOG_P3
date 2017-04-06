@@ -37,10 +37,12 @@ with open(profile, 'r') as profile_fh:
     
         if not user in profile_data:
             profile_data[user] = {}
-        
-        profile_data[user][sex] = sex
-        profile_data[user][age] = age
-        profile_data[user][country] = country
+        if age> 10 & age<70:
+            profile_data[user][age] = age
+        if sex !="":
+            profile_data[user][sex] = sex
+        if country !="":
+            profile_data[user][country] = country
 
 artists_data = {}
 with open(artists, 'r') as artist_fh:
@@ -50,8 +52,8 @@ with open(artists, 'r') as artist_fh:
         artist   = row[0]
         name = row[1]
 
-        
-        profile_data[artist] = name
+        if artist != "":
+            profile_data[artist] = name
 
 # Compute the global median and per-user median.
 plays_array  = []
