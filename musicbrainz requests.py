@@ -2,6 +2,8 @@
 #test = requests.get('http://musicbrainz.org/ws/2/artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da?inc=aliases&fmt=json')
 #test.json()
 
+##Download the musicbrainz
+
 import musicbrainzngs
 
 musicbrainzngs.set_useragent("class music analysis", "0.1" )
