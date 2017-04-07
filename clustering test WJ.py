@@ -1,6 +1,8 @@
 import numpy as np
 import csv
-from sklearn import LinearRegression as LinReg
+from sklearn.cluster import KMeans
+from kmodes import kprototypes
+#pip install kmodes
 # Predict via the user-specific median.
 # If the user has no data, use the global median.
 
@@ -20,63 +22,55 @@ with open(profile, 'r') as profile_fh:
         sex = row[1]
         age  = row[2]
         country = row[3]
-    
-        if not user in profile_data:
-            profile_data[user] = {}
-        if age> 10 & age<70:
-            profile_data[user][age] = age
-        if sex !="":
-            profile_data[user][sex] = sex
-        if country !="":
-            profile_data[user][country] = country
+        if age == '':
+            age = 'z'
+        elif int(age)< 10 & int(age)>70:
+            age = 'z'
+        if sex =='':
+            sex == 'z'
+        if country == '':
+            country == 'z'
+        profile_data[user] = [sex, age, country]
+        #if age == 'z':
+            #print profile_data[user]
 
-# Load the training data.
-train_data = {}
-with open(train_file, 'r') as train_fh:
-    train_csv = csv.reader(train_fh, delimiter=',', quotechar='"')
-    next(train_csv, None)
-    for row in train_csv:
-        user   = row[0]
-        artist = row[1]
-        plays  = row[2]
-    
-        if not user in train_data:
-            train_data[user] = {}
-        if int(plays)
-        train_data[user][artist] = int(plays)
-        
-artists_data = {}
 with open(artists, 'r') as artist_fh:
     artists_csv = csv.reader(artist_fh, delimiter=',', quotechar='"')
     next(artists_csv, None)
     for row in artists_csv:
-        artist   = row[0]
+        artist = row[0]
         name = row[1]
 
-        if artist != "":
-            artists_data[artist] = name
-#%% Test if this works
-for user,user_data in train_data.iteritems():
-        for plays in user_data.iteritems:
-            plays -= user_medians[user]
-    
-
+        profile_data[artist] = [name]
 #%%
-# Compute the global median and per-user median.
-plays_array  = []
-user_medians = {}
-for user, user_data in train_data.iteritems():
-    user_plays = []
-    for artist, plays in user_data.iteritems():
-        plays_array.append(plays)
-        user_plays.append(plays)
+X = np.genfromtxt(train_file, dtype=object, delimiter=',')[1:, :-1]
+Y = np.genfromtxt(train_file, dtype=object, delimiter=',')[1:, -1]
+#%%
+#Right now X is of the format User,artist 
+X = np.append(X,np.full((len(X),4),np.nan),axis=1)
+#%%
+for i in xrange(len(X)):
+    for j in range(2,5):   
+     #This should add gender, age, country
+     X[i,j] = profile_data[X[i,0]][j-2]
+     X[i,5] = profile_data[X[i,1]][0]
+#%%
+#Fix ages
+     a= np.mean(X[X[:,3]!='z'][:,3])
+#%%
+# Make training matrix.
+training_matrix = []
+for user in train_data:
+    for artist in train_data[user]:
+        training_matrix.append([user, artist] + train_data[user][artist])
 
-    user_medians[user] = np.median(np.array(user_plays))
-global_median = np.median(np.array(plays_array))
-
-#%% run regression
-test = LinReg(n_jobs=-1)
-test.fit()
+#reg = KMeans(n_clusters = 10, n_init = 3, n_jobs = -1)
+#reg.fit(training_matrix[:-1],training_matrix[-1])
+#reg.fit(training_matrix)
+#reg.fit(training_matrix[:-1],training_matrix[-1])
+#%%
+reg = kprototypes.KPrototypes(n_clusters = 8, init='Cao')
+reg.fit(X,y=Y,categorical =[0,1,2,4,5] )
 #%%
 # Write out test solutions.
 with open(test_file, 'r') as test_fh:

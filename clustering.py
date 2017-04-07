@@ -1,7 +1,8 @@
 import numpy as np
 import csv
 from sklearn.cluster import KMeans
-
+from kmodes import kprototypes
+#pip install kmodes
 # Predict via the user-specific median.
 # If the user has no data, use the global median.
 
@@ -31,7 +32,7 @@ with open(artists, 'r') as artist_fh:
         artist = row[0]
         name = row[1]
 
-        profile_data[artist] = name
+        profile_data[artist] = [name]
 
 # Load the training data.
 train_data = {}
@@ -55,17 +56,24 @@ with open(train_file, 'r') as train_fh:
             artist_data = profile_data[artist]
         else:
             artist_data = [""]
-
-        train_data[user][artist] = [int(plays)] + user_data + artist_data
-
+                
+        train_data[user][artist] =  user_data + artist_data + [int(plays)]
+#%%
 # Make training matrix.
 training_matrix = []
 for user in train_data:
-    for artist in user:
-        training_matrix.append([user, artist] + user[artist])
+    for artist in train_data[user]:
+        training_matrix.append([user, artist] + train_data[user][artist])
 
-KMeans = 
-
+#reg = KMeans(n_clusters = 10, n_init = 3, n_jobs = -1)
+#reg.fit(training_matrix[:-1],training_matrix[-1])
+#reg.fit(training_matrix)
+#reg.fit(training_matrix[:-1],training_matrix[-1])
+#%%
+train_num = np.asarray(training_matrix,dtype=object)
+reg = kprototypes.KPrototypes(n_clusters = 8, init='Cao')
+reg.fit(train_num[:,:-1],y=train_num[:,-1],categorical =[0,1,2,4,5] )
+#%%
 # Write out test solutions.
 with open(test_file, 'r') as test_fh:
     test_csv = csv.reader(test_fh, delimiter=',', quotechar='"')
