@@ -13,7 +13,7 @@ profile = "profiles.csv"
 train_file = 'train.csv'
 test_file  = 'test.csv'
 small_test_file = 'small_test.csv'
-soln_file  = 'submit_1.csv'
+soln_file  = 'submit_2.csv'
 artists = "artists.csv"
 
 # Load the profile data-- next is to skip headers
@@ -50,13 +50,6 @@ with open(train_file, 'r') as train_fh:
             train_data[user] = {}
         train_data[user][artist] = int(plays)
         
-
-#%% Test if this works
-#for user,user_data in train_data.iteritems():
-#        for plays in user_data.iteritems:
-#            plays -= user_medians[user]
-    
-
 #%%
 # Compute the global median, per-user median
 plays_array  = []
@@ -76,15 +69,14 @@ Y= np.load('Y.npy')
 #%%
 together=[]
 for i in xrange(len(X)):
-    together.append(X[i,1],together[i,1]=int(Y[i]))
+    together.append([X[i,1],int(Y[i])])
 
 #%%
 together_edit = np.reshape(together,(-1,2))
 grouping = pd.DataFrame({'artist_ID':together_edit[:,0], 'plays': together_edit[:,1]})
-pd.to_numeric(grouping['plays'])
-grouped = grouping.groupby('artist_ID').apply(np.median)
-#for i in 
-#grouping = matplotlib.mlab.rec_groupby(grouping,X,)
+grouping['plays']=pd.to_numeric(grouping['plays'])
+#grouped = grouping.groupby('artist_ID').apply(np.median)
+
 #%%
 artist_median={}
 for i in grouping.artist_ID.unique():
@@ -109,24 +101,58 @@ X_train,X_val,Y_train,Y_val = train_test_split(correct_X[:,:-1], correct_X[:,-1]
 test = linear_model.LinearRegression(n_jobs=-1)
 test.fit(X_train,Y_train)
 print test.score(X_val,Y_val)
-print mae(Y_train,test.predict(X_train))
+print mae(Y_val,test.predict(X_val))
 print test.coef_
 print test.intercept_
-#%% Testing another regression
-X_train2,X_val2,Y_train2,Y_val2 = train_test_split(correct_X[:,:-1], np.log(correct_X[:,-1]),test_size=0.2)
-test2 = linear_model.LinearRegression(n_jobs=-1)
-test2.fit(X_train2,Y_train2)
-test2.score(X_val2,Y_val2)
-mae(np.exp(Y_train2),np.exp(test2.predict(X_train2)))
-test2.coef_
-test2.intercept_
-#a = test.predict(X_train)
 
-#%%
+
+#%% Replace the zeros -- did not help that much
+X_train,X_val,Y_train,Y_val = train_test_split(correct_X[:,:-1], correct_X[:,-1],test_size=0.2)
+test = linear_model.LinearRegression(n_jobs=-1)
+test.fit(X_train,Y_train)
+pred = test.predict(X_val)
+pred[pred[:]<=0 ] = 0
+print test.score(X_val,Y_val)
+print mae(Y_val,pred)
+print test.coef_
+print test.intercept_
+#%% Try out elastic net
+Elastic = linear_model.ElasticNet(warm_start=True)
+Elastic.fit(X_train,Y_train)
+pred = Elastic.predict(X_val)
+pred[pred[:]<=0 ] = 0
+print Elastic.score(X_val,Y_val)
+print mae(Y_val,pred)
+print Elastic.coef_
+print Elastic.intercept_
+#%% RANSAC Regressor
+X_train,X_val,Y_train,Y_val = train_test_split(correct_X[:,:-1], correct_X[:,-1],test_size=0.2)
+ran = linear_model.RANSACRegressor()
+ran.fit(X_train,Y_train)
+#No 0 values in predict
+#pred = ran.predict(X_val)
+print ran.score(X_val,Y_val)
+print mae(Y_val, ran.predict(X_val))
+print mae(Y_val,X_val[:,0])
+
+#%% Try random weightings
+predY_val=[]
+smallest_MAE=9999999999999
+best_weight = 2
+for i in np.arange(0,1.1,0.05):
+    for j in range(len(X_val)):
+        predY_val.append(i*X_val[j,0]+(1-i)*X_val[j,1])
+    a = mae(Y_val,predY_val)
+    if a<smallest_MAE:
+        smallest_MAE = a
+        best_weight = i
+    predY_val=[]
+    print ("For weight : %f the MAE was %f"%(i,round(a,2)))
+print best_weight
+print smallest_MAE
 
 #%%
 # Write out test solutions.
-c=0
 with open(test_file, 'r') as test_fh:
     test_csv = csv.reader(test_fh, delimiter=',', quotechar='"')
     next(test_csv, None)
@@ -143,9 +169,9 @@ with open(test_file, 'r') as test_fh:
             user   = row[1]
             artist = row[2]
             if user in user_medians and artist in artist_median:
-                answer = test.predict(np.reshape([user_medians[user],artist_median[artist]],(-1,2)))
+                answer = ran.predict(np.reshape([user_medians[user],artist_median[artist]],(-1,2)))
                 if answer[0]<= 0:
-                    soln_csv.writerow([id, global_median])
+                    soln_csv.writerow([id, 0])
                 else:
                     soln_csv.writerow([id, answer[0]])
             else:

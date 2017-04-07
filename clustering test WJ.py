@@ -2,6 +2,8 @@ import numpy as np
 import csv
 from sklearn.cluster import KMeans
 from kmodes import kprototypes
+from sklearn.cross_validation import train_test_split
+
 #pip install kmodes
 # Predict via the user-specific median.
 # If the user has no data, use the global median.
@@ -56,22 +58,30 @@ for i in xrange(len(X)):
      X[i,5] = profile_data[X[i,1]][0]
 #%%
 #Fix ages
-     a= np.mean(X[X[:,3]!='z'][:,3])
+a= np.mean(X[(X[:,3]!='z')&(X[:,3]!='')][:,3].astype(int))
+#%%
+for i in np.where( X[:,3] == 'z')[0]:
+    X[i,3] = 24
+#%%
+#np.save('X',X)
+#np.save('Y',Y)
 #%%
 # Make training matrix.
-training_matrix = []
-for user in train_data:
-    for artist in train_data[user]:
-        training_matrix.append([user, artist] + train_data[user][artist])
+#training_matrix = []
+#for user in train_data:
+#    for artist in train_data[user]:
+#        training_matrix.append([user, artist] + train_data[user][artist])
 
 #reg = KMeans(n_clusters = 10, n_init = 3, n_jobs = -1)
 #reg.fit(training_matrix[:-1],training_matrix[-1])
 #reg.fit(training_matrix)
 #reg.fit(training_matrix[:-1],training_matrix[-1])
 #%%
+X_train,X_val,Y_train,Y_val = train_test_split(X, Y,test_size=0.9)
 reg = kprototypes.KPrototypes(n_clusters = 8, init='Cao')
-reg.fit(X,y=Y,categorical =[0,1,2,4,5] )
-#%%
+reg.fit(X_train,y=Y_train,categorical =[0,1,2,4,5] )
+#%% Test out vs user mean
+for i in X_val
 # Write out test solutions.
 with open(test_file, 'r') as test_fh:
     test_csv = csv.reader(test_fh, delimiter=',', quotechar='"')
